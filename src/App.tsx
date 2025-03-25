@@ -52,17 +52,17 @@ const AppRoutes = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+    <BrowserRouter>
       <AuthProvider>
         <ChatProvider>
-          <BrowserRouter>
+          <TooltipProvider>
             <AppRoutes />
-          </BrowserRouter>
-          <Toaster />
-          <Sonner position="top-right" />
+            <Toaster />
+            <Sonner position="top-right" />
+          </TooltipProvider>
         </ChatProvider>
       </AuthProvider>
-    </TooltipProvider>
+    </BrowserRouter>
   </QueryClientProvider>
 );
 

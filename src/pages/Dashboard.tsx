@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart as BarChartIcon, Calendar, Heart, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BarChart as BarChartIcon, Calendar, Heart, Sparkles, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getMoodEmoji, getMoodString, getMoodColor, getAllSelfCareActivities } from '../utils/selfCare';
 import { Link } from 'react-router-dom';
