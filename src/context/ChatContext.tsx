@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { detectEmotion } from '../utils/emotions';
 import { getSelfCareSuggestion } from '../utils/selfCare';
@@ -12,6 +11,7 @@ interface Message {
   text: string;
   timestamp: Date;
   emotion?: string;
+  isCrisis?: boolean;
 }
 
 interface ChatHistory {
@@ -113,11 +113,16 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const getBotResponse = async (userMessage: string, userEmotion: string): Promise<string> => {
-    // Simulate API call to an AI service
+    // Crisis situations should get a faster response
     setIsTyping(true);
     
-    // In a real app, this would be an API call to a language model
-    const responseDelay = calculateResponseDelay(userMessage);
+    let responseDelay = calculateResponseDelay(userMessage);
+    
+    // Respond more quickly to crisis messages
+    if (userEmotion === 'crisis') {
+      responseDelay = Math.min(responseDelay, 1000); // Cap at 1 second for crisis responses
+    }
+    
     await new Promise(resolve => setTimeout(resolve, responseDelay)); 
     
     // Use our improved AI response generator
@@ -133,6 +138,22 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const trackEmotionalState = (emotion: string) => {
+    // Crisis emotions require immediate attention
+    if (emotion === 'crisis') {
+      // Show a persistent alert for crisis situations
+      toast.error(
+        "Crisis detected. Please consider calling a crisis helpline: 988 Suicide & Crisis Lifeline (US) or text HOME to 741741", 
+        { duration: 10000, position: "top-center" }
+      );
+      
+      setConsecutiveEmotions({
+        emotion,
+        count: 5, // Force high count for crisis emotions
+        alerted: true
+      });
+      return;
+    }
+    
     // Track consecutive same emotions to detect patterns
     if (emotion === consecutiveEmotions.emotion) {
       setConsecutiveEmotions({
@@ -162,13 +183,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!text.trim()) return;
     
     const userEmotion = detectEmotion(text);
+    const isCrisis = userEmotion === 'crisis';
     
     const userMessage: Message = {
       id: Date.now().toString(),
       sender: 'user',
       text,
       timestamp: new Date(),
-      emotion: userEmotion
+      emotion: userEmotion,
+      isCrisis
     };
     
     setMessages(prevMessages => [...prevMessages, userMessage]);
@@ -182,7 +205,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: (Date.now() + 1).toString(),
         sender: 'bot',
         text: botResponse,
-        timestamp: new Date()
+        timestamp: new Date(),
+        isCrisis
       };
       
       setMessages(prevMessages => [...prevMessages, botMessage]);

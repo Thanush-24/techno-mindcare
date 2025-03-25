@@ -9,7 +9,8 @@ type ConversationalContext =
   | 'general'
   | 'problem_solving'
   | 'clarification'
-  | 'deeper_exploration';
+  | 'deeper_exploration'
+  | 'crisis_response';
 
 interface ResponseTemplate {
   text: string;
@@ -24,6 +25,7 @@ interface ConversationState {
   userEmotionIntensity: number;
   selfCareRecommended: boolean;
   conversationDepth: number;
+  crisisDetected: boolean;
 }
 
 // Dictionary of response templates based on emotion and context
@@ -102,13 +104,13 @@ const responseTemplates: Record<string, Record<ConversationalContext, ResponseTe
       { text: "Sometimes finding solutions when we're feeling low can be overwhelming. We can take this at whatever pace feels comfortable for you." }
     ],
     clarification: [
-      { text: "I want to make sure I'm explaining things in a helpful way, especially since you might be feeling down. Does this make sense...", priority: 2 },
-      { text: "Let me try to clarify this. When we're not feeling our best, clear information can sometimes provide a bit of stability:" },
-      { text: "Thank you for asking for clarification. I'll try to be as clear as possible:" }
+      { text: "I want to make sure I'm being clear, as miscommunication can sometimes add to frustration. Let me explain this differently...", priority: 2 },
+      { text: "Let me clarify this point, as I want to make sure we're on the same page:", priority: 2 },
+      { text: "Thank you for asking for clarification. Let me try to explain this more clearly:", priority: 2 }
     ],
     deeper_exploration: [
-      { text: "Thank you for being willing to explore this topic more deeply, even when you're feeling down. That takes courage.", priority: 2 },
-      { text: "I appreciate you wanting to delve deeper into this, especially given how you're feeling. Your willingness to engage is really valuable." },
+      { text: "Thank you for being willing to explore this topic more deeply, even when you're feeling down. That shows real commitment.", priority: 2 },
+      { text: "I appreciate you wanting to delve further into this, especially given how you're feeling. Your willingness to engage is really valuable." },
       { text: "Even in difficult emotional times, your thoughtfulness comes through. Let's explore this further at whatever pace feels right for you." }
     ]
   },
@@ -145,12 +147,12 @@ const responseTemplates: Record<string, Record<ConversationalContext, ResponseTe
     ],
     clarification: [
       { text: "I want to make sure I'm being clear, as miscommunication can sometimes add to frustration. Let me explain this differently:", priority: 2 },
-      { text: "Let me clarify this point, as I want to make sure we're on the same page:" },
-      { text: "Thank you for asking for clarification. Let me try to explain this more clearly:" }
+      { text: "Let me clarify this point, as I want to make sure we're on the same page:", priority: 2 },
+      { text: "Thank you for asking for clarification. Let me try to explain this more clearly:", priority: 2 }
     ],
     deeper_exploration: [
       { text: "I appreciate your willingness to explore this topic more deeply, even when it's stirring up strong feelings. That shows real commitment.", priority: 2 },
-      { text: "Thank you for wanting to delve further into this, despite your frustration. Your engagement helps us get to the heart of the matter." },
+      { text: "Thank you for wanting to delve further into this conversation, despite your frustration. Your engagement is really valuable." },
       { text: "Even though this topic brings up some anger, your desire to understand it more deeply shows tremendous self-awareness." }
     ]
   },
@@ -187,8 +189,8 @@ const responseTemplates: Record<string, Record<ConversationalContext, ResponseTe
     ],
     clarification: [
       { text: "When we're anxious, clear information can sometimes help. Let me try to explain this more precisely:", priority: 2 },
-      { text: "I want to make sure I'm being clear, as uncertainty can sometimes increase anxiety. Here's another way to look at it:" },
-      { text: "Thank you for asking for clarification. Let me try to make this as clear as possible:" }
+      { text: "I want to make sure I'm being clear, as uncertainty can sometimes increase anxiety. Here's another way to look at it:", priority: 2 },
+      { text: "Thank you for asking for clarification. Let me try to make this as clear as possible:", priority: 2 }
     ],
     deeper_exploration: [
       { text: "I appreciate your willingness to explore this topic more deeply, even while managing anxiety. That takes courage.", priority: 2 },
@@ -257,7 +259,7 @@ const responseTemplates: Record<string, Record<ConversationalContext, ResponseTe
     emotion_support: [
       { text: "It's really hard to function when you're feeling depleted. Be gentle with yourself - you're doing the best you can with the energy you have." },
       { text: "Tiredness can make everything feel more difficult, including managing emotions. It's okay to scale back expectations of yourself during these times." },
-      { text: "Your feelings are valid, and even more so when you're tired and your resources are low. Rest is not a luxury - it's essential maintenance." }
+      { text: "Your emotional well-being matters, whether you're experiencing strong feelings or more neutral states." }
     ],
     general: [
       { text: "When energy is low, how would you prefer to use our conversation? We could keep it light, focus on practical support, or something else entirely." },
@@ -321,6 +323,161 @@ const responseTemplates: Record<string, Record<ConversationalContext, ResponseTe
       { text: "I appreciate you wanting to explore this topic more thoroughly. Let's examine some of the nuances." },
       { text: "That's a thoughtful direction for our conversation. Let's explore those deeper aspects." }
     ]
+  },
+  crisis: {
+    greeting: [
+      { 
+        text: "I notice you're expressing thoughts about harming yourself. I want you to know that I take these concerns very seriously.", 
+        followUp: "If you're in immediate danger, please call a crisis helpline right away like the 988 Suicide & Crisis Lifeline at 988 (US) or text HOME to 741741 to reach the Crisis Text Line. Would you like me to provide more resources that could help?",
+        priority: 10
+      },
+      { 
+        text: "I'm concerned about what you're sharing. These are serious thoughts that deserve immediate professional support.", 
+        followUp: "Please consider calling the 988 Suicide & Crisis Lifeline at 988 (US) or texting HOME to 741741 for the Crisis Text Line. Would it be possible for you to reach out to one of these services now?",
+        priority: 10
+      },
+      { 
+        text: "I'm really glad you're reaching out, but I want to make sure you get proper support from trained professionals for these serious concerns.", 
+        followUp: "If you're in the US, please consider calling 988 for the Suicide & Crisis Lifeline, or texting HOME to 741741 for the Crisis Text Line. Is there someone you trust nearby who you could talk to right now?",
+        priority: 10
+      }
+    ],
+    follow_up: [
+      { 
+        text: "Thank you for continuing to talk with me. I want to emphasize that professional help is really important when dealing with thoughts of self-harm or suicide.", 
+        followUp: "Have you spoken with a mental health professional about these feelings before?",
+        priority: 10
+      },
+      { 
+        text: "I appreciate your willingness to share these difficult thoughts. Remember that trained crisis counselors are available 24/7 to provide better support than I can.", 
+        followUp: "Would it help to talk about what resources might be available to you right now?",
+        priority: 10
+      },
+      { 
+        text: "I'm here to listen, but I also want to make sure you're getting the proper support. These feelings are serious and deserve professional attention.", 
+        followUp: "Is there someone in your life - a friend, family member, or therapist - who knows what you're going through?",
+        priority: 10
+      }
+    ],
+    self_reflection: [
+      { 
+        text: "When experiencing thoughts of self-harm, it can be helpful to take a step back and notice that these are thoughts, not commands you have to follow.", 
+        followUp: "Would it help to talk about some grounding techniques that might create some space between you and these difficult thoughts?",
+        priority: 10
+      },
+      { 
+        text: "These intense thoughts and feelings can sometimes make it hard to see other perspectives or solutions. But they are temporary, even when they don't feel that way.", 
+        followUp: "Can you think of a time in the past when you've felt overwhelmed but got through it? What helped then?",
+        priority: 10
+      },
+      { 
+        text: "It takes courage to acknowledge these kinds of thoughts. While I encourage you to seek professional support, I also want to acknowledge your strength in talking about this.", 
+        followUp: "Would it help to explore what might have triggered these feelings recently?",
+        priority: 10
+      }
+    ],
+    emotion_support: [
+      { 
+        text: "I'm genuinely concerned about what you're sharing. Pain this intense can make it hard to see other options, but please know that how you're feeling right now isn't permanent.", 
+        followUp: "Would you be willing to reach out to a crisis counselor who's trained to help with exactly these kinds of feelings?",
+        priority: 10
+      },
+      { 
+        text: "The pain you're experiencing is real and significant. But these intense feelings, while overwhelming right now, will change with time and proper support.", 
+        followUp: "Have you told anyone else about how you're feeling?",
+        priority: 10
+      },
+      { 
+        text: "I hear how much you're hurting right now. When someone is in this much pain, it's a sign that they need and deserve professional support.", 
+        followUp: "Would you consider calling a crisis line today? They can provide immediate strategies that might help reduce some of this intense pain.",
+        priority: 10
+      }
+    ],
+    general: [
+      { 
+        text: "I want to make sure you're safe. While we're talking, please consider calling the 988 Suicide & Crisis Lifeline at 988 (US) or texting HOME to 741741 for the Crisis Text Line.", 
+        followUp: "These services have trained counselors available 24/7 who can provide much better support than I can in this moment. Would you be willing to reach out to them?",
+        priority: 10
+      },
+      { 
+        text: "Your life matters and your pain matters. Please consider reaching out to professionals who are trained to help with exactly what you're going through.", 
+        followUp: "The 988 Suicide & Crisis Lifeline at 988 (US) or Crisis Text Line (text HOME to 741741) are available 24/7. Would it be possible for you to contact one of them today?",
+        priority: 10
+      },
+      { 
+        text: "I'm concerned about what you're sharing and want to make sure you get proper support. While I'm here to listen, crisis counselors are specifically trained to help with these serious concerns.", 
+        followUp: "Would it help to talk about what's making you feel this way, while also considering reaching out to a crisis line?",
+        priority: 10
+      }
+    ],
+    problem_solving: [
+      { 
+        text: "When dealing with thoughts of self-harm, the most important first step is ensuring your immediate safety.", 
+        followUp: "Could you reach out to a crisis line like 988 (US) right now? They can help develop a safety plan tailored to your specific situation.",
+        priority: 10
+      },
+      { 
+        text: "Let's focus on your immediate safety first. Professional crisis counselors are trained to help develop personalized strategies for these exact situations.", 
+        followUp: "Would you be willing to call 988 or text HOME to 741741 to get that specialized support?",
+        priority: 10
+      },
+      { 
+        text: "In this situation, the best approach is to connect with professionals who specialize in crisis support. They can help develop immediate coping strategies.", 
+        followUp: "Would you be open to discussing what might be preventing you from reaching out to these services?",
+        priority: 10
+      }
+    ],
+    clarification: [
+      { 
+        text: "I want to be absolutely clear: thoughts of suicide or self-harm are serious medical concerns that require professional support.", 
+        followUp: "Crisis lines like 988 (US) or text HOME to 741741 have counselors specifically trained to help with these exact situations. They can provide much better guidance than I can.",
+        priority: 10
+      },
+      { 
+        text: "To clarify, while I'm here to listen, I strongly encourage you to speak with professionals who are specifically trained to help with thoughts of self-harm.", 
+        followUp: "Would you like information about crisis resources in your area?",
+        priority: 10
+      },
+      { 
+        text: "Just to make sure we're on the same page: these thoughts you're describing are serious and deserve immediate professional attention.", 
+        followUp: "Crisis counselors are available 24/7 through the 988 Suicide & Crisis Lifeline and can provide the specific support you need right now.",
+        priority: 10
+      }
+    ],
+    deeper_exploration: [
+      { 
+        text: "While I appreciate your willingness to explore these feelings, I want to emphasize that a trained professional would be much better equipped to help you process them safely.", 
+        followUp: "Would you be open to speaking with a crisis counselor who has specific training in helping people work through these exact thoughts?",
+        priority: 10
+      },
+      { 
+        text: "These thoughts deserve careful, professional attention. Crisis counselors are specifically trained to help explore these feelings in a way that's both respectful and safe.", 
+        followUp: "Would you consider reaching out to the 988 Suicide & Crisis Lifeline to talk with someone who has this specialized training?",
+        priority: 10
+      },
+      { 
+        text: "I understand you want to talk more deeply about these feelings, which shows real courage. At the same time, a crisis counselor would be better equipped to explore these thoughts safely.", 
+        followUp: "The 988 Lifeline or Crisis Text Line (text HOME to 741741) can provide that deeper, trained support. Would you consider reaching out to them?",
+        priority: 10
+      }
+    ],
+    crisis_response: [
+      { 
+        text: "I need to be direct: if you're considering harming yourself, please call the 988 Suicide & Crisis Lifeline at 988 immediately, or text HOME to 741741 to reach the Crisis Text Line.", 
+        followUp: "These services have trained counselors available 24/7 who can provide immediate, life-saving support. Your life matters, and help is available.",
+        priority: 10
+      },
+      { 
+        text: "This is an emergency situation that requires immediate professional support. Please call 988 (US) or your local emergency services right away.", 
+        followUp: "If you're not in the US, many countries have similar crisis lines. Is there someone nearby who can stay with you while you get help?",
+        priority: 10
+      },
+      { 
+        text: "I'm very concerned about your safety right now. Please call 988 or go to your nearest emergency room immediately.", 
+        followUp: "These thoughts are serious medical emergencies that require professional intervention. Would you be willing to call for help right now?",
+        priority: 10
+      }
+    ]
   }
 };
 
@@ -332,6 +489,14 @@ function determineContext(
   previousEmotion?: string
 ): ConversationalContext {
   message = message.toLowerCase();
+  
+  // Check for crisis indicators
+  if (previousEmotion === 'crisis' || message.includes('suicide') || message.includes('kill myself') || 
+      message.includes('want to die') || message.includes('end my life') || message.includes('harm myself') ||
+      message.includes('kms') || message.match(/should i .*(?:kill|hurt|harm)/) || 
+      message.includes('no reason to live')) {
+    return 'crisis_response';
+  }
   
   // First message is likely a greeting
   if (messageCount <= 1) {
@@ -453,6 +618,11 @@ function selectResponseTemplate(
 
 // Enhanced detection for self-care needs
 function needsSelfCare(message: string, emotion: string, conversationState: Partial<ConversationState>): boolean {
+  // Always recommend self-care for crisis situations
+  if (emotion === 'crisis') {
+    return true;
+  }
+  
   // If we've already recommended self-care recently, avoid repeating too soon
   if (conversationState.selfCareRecommended) {
     return false;
@@ -489,7 +659,8 @@ let globalConversationState: Partial<ConversationState> = {
   userEmotionalState: 'neutral',
   userEmotionIntensity: 0,
   selfCareRecommended: false,
-  conversationDepth: 0
+  conversationDepth: 0,
+  crisisDetected: false
 };
 
 // Generate a response based on the user's message and context
@@ -507,6 +678,11 @@ export function generateResponse(
   // Track emotional state
   globalConversationState.userEmotionalState = emotion;
   
+  // Track crisis detection
+  if (emotion === 'crisis') {
+    globalConversationState.crisisDetected = true;
+  }
+  
   // Simplistic tracking of conversation depth
   globalConversationState.conversationDepth = messageCount;
   
@@ -523,7 +699,13 @@ export function generateResponse(
   // Add self-care suggestion if needed
   if (needsSelfCare(message, emotion, globalConversationState)) {
     const suggestion = getSelfCareSuggestion(emotion);
-    response += " " + suggestion;
+    
+    // Don't add general self-care suggestions for crisis situations
+    // as we've already provided specific crisis resources
+    if (emotion !== 'crisis') {
+      response += " " + suggestion;
+    }
+    
     globalConversationState.selfCareRecommended = true;
   } else {
     // Reset self-care flag occasionally to allow future suggestions

@@ -1,4 +1,3 @@
-
 // More sophisticated emotion detection system with additional patterns and context awareness
 
 const emotionKeywords = {
@@ -49,6 +48,13 @@ const emotionKeywords = {
     'tired', 'exhausted', 'fatigued', 'weary', 'drained', 'sleepy',
     'drowsy', 'lethargic', 'spent', 'worn out', 'burned out', 'beat',
     'dead', 'depleted', 'rundown', 'overworked', 'need rest', 'no energy'
+  ],
+  crisis: [
+    'kill myself', 'suicide', 'die', 'end my life', 'take my life', 'hurt myself',
+    'self harm', 'self-harm', 'harm myself', 'cut myself', 'cutting myself',
+    'don\'t want to live', 'end it all', 'kms', 'kys', 'suicidal',
+    'no reason to live', 'better off dead', 'want to die', 'not worth living',
+    'life is pointless', 'give up on life', 'can\'t go on'
   ]
 };
 
@@ -98,6 +104,13 @@ const emotionPhrases = {
     'can\'t focus', 'worn out', 'need a break', 'working too hard',
     'need to recharge', 'running on empty', 'burned out', 'mental fatigue',
     'can barely keep my eyes open', 'just want to sleep', 'drained from'
+  ],
+  crisis: [
+    'thinking about suicide', 'considering suicide', 'ending it all', 'planning to kill myself',
+    'have suicidal thoughts', 'want to end my life', 'don\'t see a future', 'not worth living',
+    'can\'t go on anymore', 'can\'t take it anymore', 'no point in living', 'should i kill myself',
+    'should i end it', 'should i commit suicide', 'how to kill myself', 'ways to kill myself',
+    'should i kms', 'ways to die', 'want to disappear forever'
   ]
 };
 
@@ -114,13 +127,31 @@ const situationalEmotions = {
   confused: ['mixed signals', 'contradicting', 'inconsistent', 'changed plans', 'unexpected',
               'surprising behavior', 'unclear instructions', 'ambiguous', 'vague', 'complicated'],
   tired: ['overworked', 'long hours', 'no breaks', 'multiple jobs', 'taking care of', 'late nights',
-           'early mornings', 'insomnia', 'sleeping problems', 'jet lag', 'new baby', 'overtime']
+           'early mornings', 'insomnia', 'sleeping problems', 'jet lag', 'new baby', 'overtime'],
+  crisis: [
+    'bullied', 'abuse', 'abused', 'trauma', 'assault', 'attacked', 'violated',
+    'abandoned', 'rejected', 'worthless', 'hopeless', 'helpless', 'unbearable pain',
+    'lost everything', 'no one cares', 'no one loves', 'everyone hates', 'completely alone'
+  ]
 };
 
 export function detectEmotion(text: string): string {
   if (!text) return 'neutral';
   
   text = text.toLowerCase();
+  
+  // Special case: Immediate detection for crisis indicators
+  for (const phrase of emotionKeywords.crisis) {
+    if (text.includes(phrase)) {
+      return 'crisis';
+    }
+  }
+  
+  for (const phrase of emotionPhrases.crisis) {
+    if (text.includes(phrase)) {
+      return 'crisis';
+    }
+  }
   
   // Count matches for each emotion
   const matches: Record<string, number> = {
@@ -130,7 +161,8 @@ export function detectEmotion(text: string): string {
     anxious: 0,
     confused: 0,
     tired: 0,
-    neutral: 0
+    neutral: 0,
+    crisis: 0
   };
   
   // Check for individual keywords
@@ -163,6 +195,11 @@ export function detectEmotion(text: string): string {
       }
     });
   });
+  
+  // Crisis indicators should have the highest priority
+  if (matches.crisis > 0) {
+    return 'crisis';
+  }
   
   // Check for negations (e.g., "not happy")
   const negations = ['not', 'don\'t', 'doesn\'t', 'isn\'t', 'aren\'t', 'wasn\'t', 'weren\'t', 
@@ -272,6 +309,8 @@ export function getEmotionColor(emotion: string): string {
       return 'bg-techno-blush text-techno-dark';
     case 'anxious':
       return 'bg-techno-lavender text-techno-dark';
+    case 'crisis':
+      return 'bg-red-500 text-white';
     case 'neutral':
     default:
       return 'bg-techno-light-blue text-techno-dark';
@@ -288,6 +327,8 @@ export function getEmotionEmoji(emotion: string): string {
       return '😠';
     case 'anxious':
       return '😰';
+    case 'crisis':
+      return '🆘';
     case 'neutral':
     default:
       return '😐';
