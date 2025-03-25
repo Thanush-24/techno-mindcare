@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { detectEmotion } from '../utils/emotions';
 import { getSelfCareSuggestion } from '../utils/selfCare';
+import { generateResponse } from '../utils/aiResponseGenerator';
 import { useAuth } from './AuthContext';
 import { toast } from "sonner";
 
@@ -33,6 +34,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
+  const [previousEmotion, setPreviousEmotion] = useState<string>('neutral');
 
   // Initial greeting message
   useEffect(() => {
@@ -85,40 +87,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(`techno_chat_history_${user.id}`, JSON.stringify(newHistory));
   };
 
-  const getBotResponse = async (userMessage: string): Promise<string> => {
-    const emotion = detectEmotion(userMessage);
-    
-    // Simulate API call to an AI service (like GPT)
+  const getBotResponse = async (userMessage: string, userEmotion: string): Promise<string> => {
+    // Simulate API call to an AI service
     setIsTyping(true);
     
     // In a real app, this would be an API call to a language model
-    // For demo purposes, we'll use predefined responses based on detected emotion
     await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
     
-    let response = '';
-    
-    switch(emotion) {
-      case 'happy':
-        response = "That's wonderful to hear! I'm glad you're feeling good today. What's been going well for you?";
-        break;
-      case 'sad':
-        response = "I'm sorry to hear you're feeling down. Remember that it's okay to not be okay sometimes. Would you like to talk about what's troubling you?";
-        break;
-      case 'angry':
-        response = "I notice you might be feeling frustrated. Taking deep breaths can help in moments like these. Would you like me to guide you through a quick breathing exercise?";
-        break;
-      case 'anxious':
-        response = "It sounds like you might be experiencing some anxiety. Let's take a moment to focus on the present. Can you tell me 3 things you can see around you right now?";
-        break;
-      default:
-        response = "Thank you for sharing that with me. How else have you been feeling lately?";
-    }
-    
-    // If message includes certain keywords, suggest self-care
-    if (userMessage.match(/overwhelmed|stressed|tired|exhausted|can't cope/i)) {
-      const suggestion = getSelfCareSuggestion(emotion || 'neutral');
-      response += ` ${suggestion}`;
-    }
+    // Use our improved AI response generator
+    const response = generateResponse(
+      userMessage, 
+      userEmotion, 
+      messages.length, 
+      previousEmotion
+    );
     
     setIsTyping(false);
     return response;
@@ -127,18 +109,21 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;
     
+    const userEmotion = detectEmotion(text);
+    
     const userMessage: Message = {
       id: Date.now().toString(),
       sender: 'user',
       text,
       timestamp: new Date(),
-      emotion: detectEmotion(text)
+      emotion: userEmotion
     };
     
     setMessages(prevMessages => [...prevMessages, userMessage]);
+    setPreviousEmotion(userEmotion); // Store the current emotion for context in future responses
     
     try {
-      const botResponse = await getBotResponse(text);
+      const botResponse = await getBotResponse(text, userEmotion);
       
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -165,6 +150,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       text: "Hi there! I'm Techno, your AI mental health companion. How are you feeling today?",
       timestamp: new Date()
     }]);
+    
+    setPreviousEmotion('neutral');
   };
 
   return (
