@@ -12,6 +12,7 @@ import Chat from "./pages/Chat";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
+// Create query client instance outside of the component
 const queryClient = new QueryClient();
 
 // Protected route wrapper
@@ -50,20 +51,23 @@ const AppRoutes = () => {
   );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+// The main App component that wraps everything
+function App() {
+  return (
     <BrowserRouter>
-      <AuthProvider>
-        <ChatProvider>
-          <TooltipProvider>
-            <AppRoutes />
-            <Toaster />
-            <Sonner position="top-right" />
-          </TooltipProvider>
-        </ChatProvider>
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <ChatProvider>
+            <TooltipProvider>
+              <AppRoutes />
+              <Toaster />
+              <Sonner position="top-right" />
+            </TooltipProvider>
+          </ChatProvider>
+        </AuthProvider>
+      </QueryClientProvider>
     </BrowserRouter>
-  </QueryClientProvider>
-);
+  );
+}
 
 export default App;
