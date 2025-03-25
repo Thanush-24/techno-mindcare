@@ -27,6 +27,12 @@ interface ChatContextType {
   chatHistory: ChatHistory[];
 }
 
+interface EmotionalState {
+  emotion: string;
+  count: number;
+  alerted?: boolean;
+}
+
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -35,7 +41,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [previousEmotion, setPreviousEmotion] = useState<string>('neutral');
-  const [consecutiveEmotions, setConsecutiveEmotions] = useState<{emotion: string, count: number}>({emotion: 'neutral', count: 0});
+  const [consecutiveEmotions, setConsecutiveEmotions] = useState<EmotionalState>({
+    emotion: 'neutral', 
+    count: 0,
+    alerted: false
+  });
 
   // Initial greeting message
   useEffect(() => {
@@ -127,12 +137,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (emotion === consecutiveEmotions.emotion) {
       setConsecutiveEmotions({
         emotion,
-        count: consecutiveEmotions.count + 1
+        count: consecutiveEmotions.count + 1,
+        alerted: consecutiveEmotions.alerted
       });
     } else {
       setConsecutiveEmotions({
         emotion,
-        count: 1
+        count: 1,
+        alerted: false
       });
     }
     
@@ -142,6 +154,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         !consecutiveEmotions.alerted) {
       console.log("Detected consistent negative emotional state");
       // This could trigger special recommendations or resources in a production app
+      setConsecutiveEmotions(prev => ({ ...prev, alerted: true }));
     }
   };
 
@@ -197,7 +210,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }]);
     
     setPreviousEmotion('neutral');
-    setConsecutiveEmotions({emotion: 'neutral', count: 0});
+    setConsecutiveEmotions({emotion: 'neutral', count: 0, alerted: false});
   };
 
   return (
