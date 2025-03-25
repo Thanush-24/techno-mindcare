@@ -35,6 +35,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [previousEmotion, setPreviousEmotion] = useState<string>('neutral');
+  const [consecutiveEmotions, setConsecutiveEmotions] = useState<{emotion: string, count: number}>({emotion: 'neutral', count: 0});
 
   // Initial greeting message
   useEffect(() => {
@@ -87,12 +88,27 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(`techno_chat_history_${user.id}`, JSON.stringify(newHistory));
   };
 
+  const calculateResponseDelay = (text: string): number => {
+    // Make response time more human-like based on message length
+    const baseDelay = 1000; // 1 second minimum
+    const charsPerSecond = 15; // Reading/typing speed approximation
+    
+    // Calculate delay based on text length, but cap it
+    const lengthBasedDelay = Math.min(
+      text.length / charsPerSecond * 1000,
+      3000 // Cap at 3 seconds
+    );
+    
+    return baseDelay + lengthBasedDelay;
+  };
+
   const getBotResponse = async (userMessage: string, userEmotion: string): Promise<string> => {
     // Simulate API call to an AI service
     setIsTyping(true);
     
     // In a real app, this would be an API call to a language model
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+    const responseDelay = calculateResponseDelay(userMessage);
+    await new Promise(resolve => setTimeout(resolve, responseDelay)); 
     
     // Use our improved AI response generator
     const response = generateResponse(
@@ -104,6 +120,29 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setIsTyping(false);
     return response;
+  };
+
+  const trackEmotionalState = (emotion: string) => {
+    // Track consecutive same emotions to detect patterns
+    if (emotion === consecutiveEmotions.emotion) {
+      setConsecutiveEmotions({
+        emotion,
+        count: consecutiveEmotions.count + 1
+      });
+    } else {
+      setConsecutiveEmotions({
+        emotion,
+        count: 1
+      });
+    }
+    
+    // Alert for concerning emotional patterns (in a real app, this might trigger different responses)
+    if (consecutiveEmotions.count >= 5 && 
+        (emotion === 'sad' || emotion === 'anxious') && 
+        !consecutiveEmotions.alerted) {
+      console.log("Detected consistent negative emotional state");
+      // This could trigger special recommendations or resources in a production app
+    }
   };
 
   const sendMessage = async (text: string) => {
@@ -121,6 +160,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setMessages(prevMessages => [...prevMessages, userMessage]);
     setPreviousEmotion(userEmotion); // Store the current emotion for context in future responses
+    trackEmotionalState(userEmotion);
     
     try {
       const botResponse = await getBotResponse(text, userEmotion);
@@ -133,6 +173,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       
       setMessages(prevMessages => [...prevMessages, botMessage]);
+      
+      // Auto-save chat to history after a meaningful exchange
+      if (messages.length % 10 === 0) {
+        saveChatToHistory();
+      }
     } catch (error) {
       toast.error("I'm having trouble responding right now. Please try again later.");
       console.error("Error getting bot response:", error);
@@ -152,6 +197,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }]);
     
     setPreviousEmotion('neutral');
+    setConsecutiveEmotions({emotion: 'neutral', count: 0});
   };
 
   return (
